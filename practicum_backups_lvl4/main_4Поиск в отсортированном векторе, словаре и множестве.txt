@@ -1,0 +1,118 @@
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <set>
+#include <vector>
+
+using namespace std;
+
+set<int>::const_iterator FindNearestElement(const set<int>& numbers, int border) {
+    // set<int>::const_iterator — тип итераторов для константного множества целых чисел
+    if(numbers.size() == 0) return numbers.end();//empty set situation
+    
+    set<int>::const_iterator lower = numbers.lower_bound(border);
+    
+    if(lower == numbers.begin()) return lower;
+    else if(lower == numbers.end()) return --lower;
+    else
+    {        
+        //cout << *prevValue << "<- ->"s << *lower << endl;
+        if(*lower - border < border - *(--lower)) return ++lower;//lower value
+        else return lower;//prev value
+    }
+}
+
+int main() {
+    set<int> numbers = {1, 4, 6};
+    cout << *FindNearestElement(numbers, 0) << " " << *FindNearestElement(numbers, 3) << " "
+         << *FindNearestElement(numbers, 5) << " " << *FindNearestElement(numbers, 6) << " "
+         << *FindNearestElement(numbers, 100) << endl;
+    set<int> empty_set;
+    cout << (FindNearestElement(empty_set, 8) == end(empty_set)) << endl;
+    return 0;
+}
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <tuple>
+#include <set>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+
+
+template <typename RandomIt>
+pair<RandomIt, RandomIt> FindStartsWith(RandomIt range_begin, RandomIt range_end, char prefix) 
+{
+    string lower_bound_str(1, prefix);
+    string upper_bound_str(1, prefix + 1);
+ 
+    auto it1 = lower_bound(range_begin, range_end, lower_bound_str);
+    auto it2 = lower_bound(range_begin, range_end, upper_bound_str);
+ 
+    return make_pair(it1, it2);
+}
+
+int main() {
+    const vector<string> sorted_strings = {"moscow", "murmansk", "vologda"};
+    const auto m_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), 'm');
+    cout << (m_result.first - begin(sorted_strings)) << " " << (m_result.second - begin(sorted_strings)) << endl;
+    for (auto it = m_result.first; it != m_result.second; ++it) {
+        cout << *it << " ";    }
+    cout << endl;
+    const auto p_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), 'p');
+    cout << (p_result.first - begin(sorted_strings)) << " " << (p_result.second - begin(sorted_strings)) << endl;
+    const auto z_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), 'z');
+    cout << (z_result.first - begin(sorted_strings)) << " " << (z_result.second - begin(sorted_strings)) << endl;
+    return 0;
+}
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <tuple>
+#include <set>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+template <typename RandomIt>
+pair<RandomIt, RandomIt> FindStartsWith(RandomIt range_begin, RandomIt range_end, string prefix) 
+{ 
+    string lower_bound_str = prefix;
+    string upper_bound_str = prefix;
+    char back = prefix.back() + 1;
+    upper_bound_str.pop_back();
+    upper_bound_str += back;
+    
+    auto it1 = lower_bound(range_begin, range_end, lower_bound_str);
+    auto it2 = lower_bound(range_begin, range_end, upper_bound_str);
+ 
+    return make_pair(it1, it2);
+}
+
+int main() {
+    const vector<string> sorted_strings = {"moscow", "motovilikha", "murmansk"};
+    const auto mo_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), "mo");
+    for (auto it = mo_result.first; it != mo_result.second; ++it) {
+        cout << *it << " ";
+    }
+    cout << endl;
+    const auto mt_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), "mt");
+    cout << (mt_result.first - begin(sorted_strings)) << " " << (mt_result.second - begin(sorted_strings)) << endl;
+    const auto na_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), "na");
+    cout << (na_result.first - begin(sorted_strings)) << " " << (na_result.second - begin(sorted_strings)) << endl;
+    return 0;
+}

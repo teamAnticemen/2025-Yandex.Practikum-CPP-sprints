@@ -1,0 +1,32 @@
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+template <typename It>
+void PrintRange(It range_begin, It range_end) {
+    for (auto it = range_begin; it != range_end; ++it) {
+        cout << *it << " "s;
+        cout << endl;
+    }    
+}
+
+void PrintSpacesPositions(string& str) {
+    // напишите реализацию
+    vector<int> charVec;
+    int index = 0;
+    for(auto one : str)
+    {
+        if(one == ' ') charVec.push_back(index);
+        index++;
+    }
+    PrintRange(charVec.begin(),charVec.end());
+}
+
+int main() {
+    string str = "He said: one and one and one is three"s;
+    PrintSpacesPositions(str);
+    return 0;
+}
