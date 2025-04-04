@@ -1,0 +1,47 @@
+#include <cassert>
+#include <iostream>
+#include <string_view>
+#include <vector>
+
+using namespace std;
+
+vector<string_view> SplitIntoWordsView(string_view str) {
+    vector<string_view> result;
+
+    // Удаляем начальные пробелы
+    str.remove_prefix(min(str.size(), str.find_first_not_of(' ')));
+
+    while (!str.empty()) {
+        // Находим позицию первого пробела
+        size_t space = str.find(' ');
+
+        // Добавляем найденное слово в результат
+        result.push_back(space == string_view::npos ? str : str.substr(0, space));
+
+        // Передвигаем начало строки за найденный пробел
+        if (space != string_view::npos) {
+            str.remove_prefix(space + 1);
+        } else {
+            break; // если space == npos, выходим из цикла
+        }
+
+        // Пропускаем пробелы в начале следующего слова
+        str.remove_prefix(min(str.size(), str.find_first_not_of(' ')));
+    }
+
+    return result;
+}
+
+int main() {
+    assert((SplitIntoWordsView("") == vector<string_view>{}));
+    assert((SplitIntoWordsView("     ") == vector<string_view>{}));
+    assert((SplitIntoWordsView("aaaaaaa") == vector{"aaaaaaa"sv}));
+    assert((SplitIntoWordsView("a") == vector{"a"sv}));
+    assert((SplitIntoWordsView("a b c") == vector{"a"sv, "b"sv, "c"sv}));
+    assert((SplitIntoWordsView("a    bbb   cc") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("  a    bbb   cc") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("a    bbb   cc   ") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("  a    bbb   cc   ") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("green  parrot") == vector{"green"sv, "parrot"sv})); // добавлено для теста
+    cout << "All OK" << endl;
+}

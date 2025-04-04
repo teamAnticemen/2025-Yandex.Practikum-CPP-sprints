@@ -1,0 +1,160 @@
+#pragma once
+#include <iostream>
+#include <cassert>
+#include <stdexcept>
+#include <initializer_list>
+#include <algorithm>
+
+template <typename Type>
+class SimpleVector {
+public:
+    using Iterator = Type*;
+    using ConstIterator = const Type*;
+
+    SimpleVector() noexcept : size_(0), capacity_(0), data_(nullptr) {}
+
+    SimpleVector(size_t size) : size_(size), capacity_(size), data_(new Type[size]()) {}
+
+    SimpleVector(size_t size, const Type& value) : size_(size), capacity_(size), data_(new Type[size]) {
+        std::fill(data_, data_ + size, value);
+    }
+
+    SimpleVector(std::initializer_list<Type> list) : size_(list.size()), capacity_(list.size()), data_(new Type[list.size()]) {
+        std::copy(list.begin(), list.end(), data_);
+    }
+
+    SimpleVector(const SimpleVector& other)
+        : size_(other.size_), capacity_(other.capacity_), data_(new Type[other.capacity_]) {
+        std::copy(other.data_, other.data_ + size_, data_);
+    }
+
+    SimpleVector& operator=(SimpleVector other) {
+        swap(other);
+        return *this;
+    }
+
+    ~SimpleVector() noexcept { delete[] data_; }
+
+    void PushBack(const Type& item) noexcept {
+        if (size_ >= capacity_) {
+            size_t new_capacity = capacity_ == 0 ? 1 : capacity_ * 2;
+            Type* new_data = new Type[new_capacity];
+            if (size_ > 0) {
+                std::copy(data_, data_ + size_, new_data);
+            }
+            delete[] data_;
+            data_ = new_data;
+            capacity_ = new_capacity;
+        }
+        data_[size_] = item;
+        ++size_;
+    }
+
+    void PopBack() noexcept {
+        assert(size_ > 0);
+        --size_;
+    }
+
+    Iterator Insert(ConstIterator pos, const Type& value) noexcept {
+        assert(pos >= data_ && pos <= data_ + size_);
+        size_t index = pos - data_;
+        PushBack(value); // Increase vector if necessary
+        for (size_t i = size_ - 1; i > index; --i) {
+            data_[i] = data_[i - 1]; // Shift elements to the right
+        }
+        data_[index] = value; // Insert element
+        return data_ + index; // Return iterator to inserted element
+    }
+
+    Iterator Erase(ConstIterator pos) noexcept {
+        assert(pos >= data_ && pos < data_ + size_);
+        size_t index = pos - data_;
+        for (size_t i = index; i < size_ - 1; ++i) {
+            data_[i] = data_[i + 1]; // Shift elements to the left
+        }
+        --size_;
+        return data_ + index; // Return iterator to next element
+    }
+
+    void Clear() noexcept { size_ = 0; }
+
+    void Resize(size_t new_size) {
+        if (new_size < size_) {
+            size_ = new_size; // Shrink size
+        } else if (new_size <= capacity_) {
+            std::fill(data_ + size_, data_ + new_size, Type());
+            size_ = new_size;
+        } else {
+            Type* new_data = new Type[new_size];
+            std::copy(data_, data_ + size_, new_data); // Copy existing elements
+            std::fill(new_data + size_, new_data + new_size, Type()); // Initialize new elements
+            delete[] data_;
+            data_ = new_data;
+            size_ = new_size;
+            capacity_ = new_size;
+        }
+    }
+
+    size_t GetSize() const noexcept { return size_; }
+    size_t GetCapacity() const noexcept { return capacity_; }
+    bool IsEmpty() const noexcept { return size_ == 0; }
+
+    Type& operator[](size_t index) noexcept { return data_[index]; }
+    const Type& operator[](size_t index) const noexcept { return data_[index]; }
+
+    Type& At(size_t index) {
+        if (index >= size_) {
+            throw std::out_of_range("Index out of range");
+        }
+        return data_[index];
+    }
+
+    const Type& At(size_t index) const {
+        if (index >= size_) {
+            throw std::out_of_range("Index out of range");
+        }
+        return data_[index];
+    }
+
+    Iterator begin() noexcept { return data_; }
+    ConstIterator begin() const noexcept { return data_; }
+    Iterator end() noexcept { return data_ + size_; }
+    ConstIterator end() const noexcept { return data_ + size_; }
+
+    ConstIterator cbegin() const noexcept { return data_; }
+    ConstIterator cend() const noexcept { return data_ + size_; }
+
+    void swap(SimpleVector& other) noexcept {
+        std::swap(size_, other.size_);
+        std::swap(capacity_, other.capacity_);
+        std::swap(data_, other.data_);
+    }
+
+    bool operator==(const SimpleVector& other) const {
+        if (size_ != other.size_) return false;
+        for (size_t i = 0; i < size_; ++i) {
+            if (!(data_[i] == other.data_[i])) return false;
+        }
+        return true;
+    }
+
+    bool operator!=(const SimpleVector& other) const { return !(*this == other); }
+
+    bool operator<(const SimpleVector& other) const {
+        size_t min_size = std::min(size_, other.size_);
+        for (size_t i = 0; i < min_size; ++i) {
+            if (data_[i] < other.data_[i]) return true;
+            if (data_[i] > other.data_[i]) return false;
+        }
+        return size_ < other.size_; // If equal, compare sizes
+    }
+
+    bool operator>(const SimpleVector& other) const { return other < *this; }
+    bool operator<=(const SimpleVector& other) const { return !(*this > other); }
+    bool operator>=(const SimpleVector& other) const { return !(*this < other); }
+
+private:
+    size_t size_ = 0;       // Current size
+    size_t capacity_ = 0;   // Capacity
+    Type* data_ = nullptr;  // Pointer to data
+};

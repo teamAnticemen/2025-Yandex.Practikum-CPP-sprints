@@ -1,0 +1,45 @@
+#include <cassert>
+#include <iostream>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+
+using namespace std;
+
+class Translator {
+public:
+    void Add(const string& source, const string& target) {
+        forward_translations[source] = target;
+        backward_translations[target] = source;
+    }
+
+    string_view TranslateForward(string_view source) const {
+        auto it = forward_translations.find(string(source));
+        return it != forward_translations.end() ? it->second : ""sv;
+    }
+
+    string_view TranslateBackward(string_view target) const {
+        auto it = backward_translations.find(string(target));
+        return it != backward_translations.end() ? it->second : ""sv;
+    }
+
+private:
+    unordered_map<string, string> forward_translations;  // Переводы с языка 1 на язык 2
+    unordered_map<string, string> backward_translations; // Переводы с языка 2 на язык 1
+};
+
+void TestSimple() {
+    Translator translator;
+    translator.Add("okno", "window");
+    translator.Add("stol", "table");
+
+    assert(translator.TranslateForward("okno") == "window");
+    assert(translator.TranslateBackward("table") == "stol");
+    assert(translator.TranslateForward("table") == "");
+}
+
+int main() {
+    TestSimple();
+    cout << "All tests passed!" << endl;
+    return 0;
+}

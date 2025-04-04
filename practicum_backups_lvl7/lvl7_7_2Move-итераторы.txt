@@ -1,0 +1,82 @@
+#include <algorithm>
+#include <cassert>
+#include <string>
+#include <vector>
+#include <iterator>
+
+using namespace std;
+
+// Определение типа Sentence как синонима для vector<Token>
+template <typename Token>
+using Sentence = vector<Token>;
+
+template <typename TokenForwardIt>
+TokenForwardIt FindSentenceEnd(TokenForwardIt tokens_begin, TokenForwardIt tokens_end) {
+    const TokenForwardIt before_sentence_end
+        = adjacent_find(tokens_begin, tokens_end, [](const auto& left_token, const auto& right_token) {
+              return left_token.IsEndSentencePunctuation() && !right_token.IsEndSentencePunctuation();
+          });
+    return before_sentence_end == tokens_end ? tokens_end : next(before_sentence_end);
+}
+
+template <typename Token>
+vector<Sentence<Token>> SplitIntoSentences(vector<Token> tokens) {
+    vector<Sentence<Token>> sentences; // Вектор для хранения предложений
+    auto current_token_begin = tokens.begin(); // Текущая позиция для обработки токенов
+
+    while (current_token_begin != tokens.end()) {
+        // Находим конец предложения
+        auto sentence_end = FindSentenceEnd(current_token_begin, tokens.end());
+
+        // Формируем предложение и перемещаем токены
+        Sentence<Token> sentence{
+            make_move_iterator(current_token_begin),
+            make_move_iterator(sentence_end)
+        };
+
+        // Добавляем предложение в вектор предложений
+        sentences.push_back(move(sentence));
+
+        // Обновляем начало для следующего предложения
+        current_token_begin = sentence_end;
+    }
+
+    return sentences; // Возвращаем вектор предложений
+}
+
+struct TestToken {
+    string data;
+    bool is_end_sentence_punctuation = false;
+
+    bool IsEndSentencePunctuation() const {
+        return is_end_sentence_punctuation;
+    }
+    bool operator==(const TestToken& other) const {
+        return data == other.data && is_end_sentence_punctuation == other.is_end_sentence_punctuation;
+    }
+};
+
+ostream& operator<<(ostream& stream, const TestToken& token) {
+    return stream << token.data;
+}
+
+// Тест для проверки работы функции
+void TestSplitting() {
+    assert(SplitIntoSentences(vector<TestToken>({{"Split"}, {"into"}, {"sentences"}, {"!"}}))
+           == vector<Sentence<TestToken>>({{{"Split"}, {"into"}, {"sentences"}, {"!"}}}));
+
+    assert(SplitIntoSentences(vector<TestToken>({{"Split"}, {"into"}, {"sentences"}, {"!", true}}))
+           == vector<Sentence<TestToken>>({{{"Split"}, {"into"}, {"sentences"}, {"!", true}}}));
+
+    assert(SplitIntoSentences(vector<TestToken>(
+               {{"Split"}, {"into"}, {"sentences"}, {"!"}, {"!"}, {"Without"}, {"copies"}, {"."}}))
+           == vector<Sentence<TestToken>>({
+               {{"Split"}, {"into"}, {"sentences"}, {"!"}, {"!"}},
+               {{"Without"}, {"copies"}, {"."}},
+           }));
+}
+
+int main() {
+    TestSplitting(); // Запускаем тест
+    return 0;
+}
