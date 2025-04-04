@@ -1,0 +1,86 @@
+#include <algorithm>
+#include <cassert>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <string_view>
+#include <typeinfo>
+
+using namespace std;
+using namespace std::literals;
+using filesystem::path;
+namespace fs = std::filesystem;
+
+path operator""_p(const char* data, std::size_t sz) {
+    return path(data, data + sz);
+}
+
+int depth = 0;
+// напишите эту функцию
+void PrintTree(ostream& dst, const path& p) {     
+    if (!fs::exists(p) || !fs::is_directory(p)) {//Ошибка: указанный путь не существует или не является папкой
+        dst << p.filename().string() << endl;	//////////////////////----------> тут ошибка!!!!!!!
+        return;
+    }
+
+    // Получаем список элементов в директории
+    std::vector<fs::directory_entry> entries;
+    for (const auto& entry : fs::directory_iterator(p)) {
+        entries.push_back(entry);
+    }
+
+    // Сортируем элементы в обратном алфавитном порядке
+    std::sort(entries.begin(), entries.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
+        return a.path().filename().string() > b.path().filename().string();
+    });
+
+    // Выводим отступы для уровня глубины
+    std::string indent(depth, ' ');    
+    
+     
+    // Обходим и выводим элементы
+    for (const auto& entry : entries) {
+        if(depth == 0)
+        {
+            dst << indent << p.string() << '\n';
+            depth += 2;
+        }
+        std::string indent(depth, ' ');
+        dst << indent << entry.path().filename().string();
+        
+        // Если это папка, рекурсивно вызываем PrintTree
+        if (fs::is_directory(entry)) {            
+            dst << '\n'; 
+            depth += 2;
+            PrintTree(dst, entry.path());           
+        }
+        else dst << std::endl;
+    }
+    depth = 2;
+}
+
+int main() {
+    error_code err;
+    filesystem::remove_all("test_dir", err);
+    //filesystem::create_directories("test_dir"_p / "a"_p, err);
+    //filesystem::create_directories("test_dir"_p / "b"_p, err);
+
+    //ofstream("test_dir"_p / "b"_p / "f1.txt"_p);
+    //ofstream("test_dir"_p / "b"_p / "f2.txt"_p);
+    //ofstream("test_dir"_p / "a"_p / "f3.txt"_p);
+
+    ostringstream out;
+    PrintTree(out, "test_dir"_p);
+    cout << out.str() << endl;
+    assert(out.str() ==
+        "test_dir\n"
+        //"  b\n"
+        //"    f2.txt\n"
+        //"    f1.txt\n"
+        //"  a\n"
+        //"    f3.txt\n"s
+    );
+}

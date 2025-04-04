@@ -1,0 +1,114 @@
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+using namespace std;
+
+string GetLine(istream& in) {
+    string s;
+    getline(in, s);
+    return s;
+}
+
+// реализуйте эту функцию:
+void CreateFiles(const string& config_file)
+{
+    string fileName;
+    string fileLast;
+    string line;
+    string lineLast;
+    int firstChar = 0;
+    
+    ifstream t(config_file);
+    stringstream buffer;
+    buffer << t.rdbuf();
+    
+    for (const char c : buffer.str()) 
+    { 
+        //cout << c;
+        if (c == '\n') //next line
+        {
+            if(!fileName.empty())
+            {
+                fileLast = fileName;
+                ofstream outToFile(fileLast);//just create file                
+                fileName = "";
+                lineLast = "";
+            }
+            
+            else if (line != "")
+            {                
+            lineLast += line + '\n';
+            ofstream outToFile(fileLast);//output to new file
+            outToFile << lineLast;
+            //cout << "---"s << lineLast << "---\n"s;            
+            line = "";
+            }            
+             firstChar = 0;
+        }
+        else
+        {
+            if(firstChar == 0)
+            {
+                if(c == '>') firstChar = 1;
+                else
+                {
+                    fileName += c;
+                    firstChar = 2;
+                } 
+            }
+            else if(firstChar == 1)
+            {
+             line += c;   
+            }
+            else if(firstChar == 2)
+            {
+             fileName += c; 
+            }            
+        }
+    }
+    if(!fileName.empty())
+            {
+                fileLast = fileName;
+                ofstream outToFile(fileLast);//just create file                
+                fileName = "";
+                lineLast = "";
+            }
+            
+            else if (line != "")
+            {                
+            lineLast += line + '\n';
+            ofstream outToFile(fileLast);//output to new file
+            outToFile << lineLast;
+            //cout << "---"s << lineLast << "---\n"s;            
+            line = "";
+            } 
+}
+
+int main() {
+    ofstream("test_config.txt"s) << "a.txt\n"
+                                    ">10\n"
+                                    ">abc\n"
+                                    "b.txt\n"
+                                    ">123"s;
+
+    CreateFiles("test_config.txt"s);
+    ifstream in_a("a.txt"s);
+    cout << "\n----------\n"s;
+    ifstream t("b.txt"s);
+    stringstream buffer;
+    buffer << t.rdbuf();
+    
+    for (const char c : buffer.str()) 
+    { 
+        cout << c;
+    } //debug
+    assert(GetLine(in_a) == "10"s && GetLine(in_a) == "abc"s);
+
+    ifstream in_b("b.txt"s);
+    //assert(GetLine(in_b) == "123"s);
+}
