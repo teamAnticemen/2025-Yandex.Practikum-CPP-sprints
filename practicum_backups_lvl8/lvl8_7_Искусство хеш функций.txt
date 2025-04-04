@@ -1,0 +1,45 @@
+#include <iostream>
+#include <string>
+#include <functional>
+
+using namespace std;
+
+struct Circle {
+    double x;
+    double y;
+    double r;
+};
+
+struct Dumbbell {
+    Circle circle1;
+    Circle circle2;
+    string text;
+};
+
+struct CircleHash {
+    size_t operator()(const Circle& circle) const {
+        size_t hash = 17; // Начальное значение
+        hash = hash * 31 + std::hash<double>()(circle.x); // Используем std::hash
+        hash = hash * 31 + std::hash<double>()(circle.y); // Используем std::hash
+        hash = hash * 31 + std::hash<double>()(circle.r); // Используем std::hash
+        return hash;
+    }
+};
+
+struct DumbbellHash {
+    size_t operator()(const Dumbbell& dumbbell) const {
+        CircleHash circle_hash; // Хешер для круга
+        size_t hash1 = circle_hash(dumbbell.circle1); // Хеш первого круга
+        size_t hash2 = circle_hash(dumbbell.circle2); // Хеш второго круга
+        size_t text_hash = std::hash<string>()(dumbbell.text); // Хеш строки
+
+        // Объединяем хеши с использованием разных степеней 37
+        return hash1 * 37 * 37 * 37 * 37 + hash2 * 37 + text_hash;
+    }
+};
+
+int main() {
+    DumbbellHash hash;
+    Dumbbell dumbbell{{10, 11.5, 2.3}, {3.14, 15, -8}, "abc"};
+    cout << "Dumbbell hash " << hash(dumbbell) << endl; // Исправлено
+}
