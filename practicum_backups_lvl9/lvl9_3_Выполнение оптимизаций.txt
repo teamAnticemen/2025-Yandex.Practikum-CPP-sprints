@@ -1,0 +1,24 @@
+#include <cstdint>
+#include <iostream>
+#include <limits>
+
+using namespace std;
+
+int main() {
+    int64_t a;
+    int64_t b;
+    cin >> a >> b;
+
+    // Определяем максимальные и минимальные значения для int64_t
+    const int64_t MAX = std::numeric_limits<int64_t>::max();
+    const int64_t MIN = std::numeric_limits<int64_t>::min();
+
+    // Проверяем на переполнение
+    if ((a > 0 && b > 0 && a > MAX - b) || (a < 0 && b < 0 && a < MIN - b)) {
+        cout << "Overflow!" << endl;
+    } else {
+        cout << a + b << endl;
+    }
+
+    return 0;
+}

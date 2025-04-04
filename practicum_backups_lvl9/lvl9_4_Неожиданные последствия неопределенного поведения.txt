@@ -1,0 +1,35 @@
+#include <iostream>
+#include <string_view>
+#include <algorithm>
+
+using namespace std;
+
+// clang-format off
+
+const int NUM_PLANETS = 9;
+const string_view PLANETS[] = {
+    "Mercury"sv, "Venus"sv, "Earth"sv,
+    "Mars"sv, "Jupiter"sv, "Saturn"sv,
+    "Uranus"sv, "Neptune"sv,
+};
+
+// clang-format on
+
+bool IsPlanet(string_view name) {
+    return std::find(std::begin(PLANETS), std::end(PLANETS), name) != std::end(PLANETS);
+}
+
+void Test(string_view name) {
+    cout << name << " is " << (IsPlanet(name) ? ""sv : "NOT "sv)
+         << "a planet"sv << endl;
+}
+
+int main() {
+    string body_name;
+    getline(cin, body_name);
+
+    // Преобразуем строку в string_view для передачи в функцию Test
+    Test(body_name);
+
+    return 0;
+}
