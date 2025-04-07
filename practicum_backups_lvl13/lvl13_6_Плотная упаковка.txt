@@ -1,0 +1,98 @@
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+
+using namespace std;
+
+struct Nucleotide {
+    char symbol;
+    size_t position;
+    int chromosome_num;
+    int gene_num;
+    bool is_marked;
+    char service_info;
+};
+
+struct CompactNucleotide {
+    uint64_t data;  // 64 бита для хранения всех данных
+};
+
+CompactNucleotide Compress(const Nucleotide& n) {
+    CompactNucleotide cn;
+
+    // Упаковываем данные в 64 бита
+    uint64_t symbol_bits = 0;
+    switch (n.symbol) {
+        case 'A': symbol_bits = 0; break;
+        case 'T': symbol_bits = 1; break;
+        case 'G': symbol_bits = 2; break;
+        case 'C': symbol_bits = 3; break;
+        default: assert(false); // Недопустимый символ
+    }
+
+    cn.data = 0;
+    cn.data |= static_cast<uint64_t>(n.position) << 32;  // 32 бита для position
+    cn.data |= static_cast<uint64_t>(n.gene_num & 0x7FFF) << 17;  // 15 бит для gene_num
+    cn.data |= static_cast<uint64_t>(n.chromosome_num & 0x3F) << 11;  // 6 бит для chromosome_num
+    cn.data |= static_cast<uint64_t>(symbol_bits & 0x3) << 9;  // 2 бита для symbol
+    cn.data |= static_cast<uint64_t>(n.is_marked ? 1 : 0) << 8;  // 1 бит для is_marked
+    cn.data |= static_cast<uint64_t>(n.service_info) & 0xFF;  // 8 бит для service_info
+
+    return cn;
+}
+
+Nucleotide Decompress(const CompactNucleotide& cn) {
+    Nucleotide n;
+
+    // Распаковываем данные из 64 бит
+    n.position = static_cast<size_t>((cn.data >> 32) & 0xFFFFFFFF);  // 32 бита для position
+    n.gene_num = static_cast<int>((cn.data >> 17) & 0x7FFF);  // 15 бит для gene_num
+    n.chromosome_num = static_cast<int>((cn.data >> 11) & 0x3F);  // 6 бит для chromosome_num
+
+    uint64_t symbol_bits = (cn.data >> 9) & 0x3;  // 2 бита для symbol
+    switch (symbol_bits) {
+        case 0: n.symbol = 'A'; break;
+        case 1: n.symbol = 'T'; break;
+        case 2: n.symbol = 'G'; break;
+        case 3: n.symbol = 'C'; break;
+        default: assert(false); // Недопустимое значение
+    }
+
+    n.is_marked = ((cn.data >> 8) & 0x1) != 0;  // 1 бит для is_marked
+    n.service_info = static_cast<char>(cn.data & 0xFF);  // 8 бит для service_info
+
+    return n;
+}
+
+static_assert(sizeof(CompactNucleotide) <= 8, "Your CompactNucleotide is not compact enough");
+static_assert(alignof(CompactNucleotide) == 8, "Don't use '#pragma pack'!");
+
+bool operator==(const Nucleotide& lhs, const Nucleotide& rhs) {
+    return (lhs.symbol == rhs.symbol) && (lhs.position == rhs.position) && (lhs.chromosome_num == rhs.chromosome_num)
+        && (lhs.gene_num == rhs.gene_num) && (lhs.is_marked == rhs.is_marked) && (lhs.service_info == rhs.service_info);
+}
+
+void TestSize() {
+    assert(sizeof(CompactNucleotide) <= 8);
+}
+
+void TestCompressDecompress() {
+    Nucleotide source;
+    source.symbol = 'T';
+    source.position = 1'000'000'000;
+    source.chromosome_num = 48;
+    source.gene_num = 1'000;
+    source.is_marked = true;
+    source.service_info = '!';
+
+    CompactNucleotide compressedSource = Compress(source);
+    Nucleotide decompressedSource = Decompress(compressedSource);
+
+    assert(source == decompressedSource);
+}
+
+int main() {
+    TestSize();
+    TestCompressDecompress();
+}
