@@ -1,0 +1,84 @@
+#include <iostream>
+#include <vector>
+#include <iomanip>
+
+using namespace std;
+
+class BookReader {
+private:
+    vector<int> user_pages;  // user_pages[user] = страница до которой дочитал этот юзер
+    vector<int> page_counts;  // page_counts[page] = кол-во юзеров дочитавших до этой страницы
+    int max_user;            // кол-во юзеров, прочитавших хотя бы 1 страницу
+
+public:
+    BookReader(int max_users, int max_pages) 
+        : user_pages(max_users + 1, 0), 
+          page_counts(max_pages + 1, 0), 
+          max_user(0) {}
+
+    void readPage(int user, int page) {
+        int prev_page = user_pages[user]; // Проверяем сколько страниц уже было прочитано
+        if (prev_page > 0) { // Уже читал книгу
+            // Уменьшаем счетчик для предшествующей страницы
+            for (int p = prev_page; p >= 0; --p) {
+                page_counts[p]--;
+            }
+        } else { // Не читал книгу
+            max_user++;
+        }
+
+        user_pages[user] = page; // Обновляем кол-во страниц, которое прочитано
+
+        // Увеличиваем счетчик для новой страницы
+        for (int p = page; p >= 0; --p) {
+            page_counts[p]++;
+        }
+    }
+
+    void cheerUser (int user) {
+        int this_user_page = user_pages[user]; // Проверяем сколько страниц уже было прочитано
+        // В начале отработаем особые случаи
+        if (this_user_page == 0) { // Пользователь не читал книгу
+            cout << "0\n";
+            return;
+        }
+
+        int total_users = page_counts[this_user_page];
+        if (total_users == 1) { // До этой страницы дочитал только этот пользователь
+            cout << "1\n";
+            return;
+        }
+
+        if (total_users == max_user) { // Все пользователи дочитали до этой страницы
+            cout << "0\n";
+            return;
+        }
+        // Обработка общего случая требующего расчетов
+        double ratio = (max_user - total_users) / (max_user - 1.0);
+        cout << setprecision(6) << ratio << "\n";
+    }
+};
+
+int main() {
+    int Q;
+    cin >> Q;
+
+    BookReader bookReader(100000, 1000); // Инициализация класса с максимальным количеством пользователей и страниц
+
+    while (Q--) {
+        string type;
+        cin >> type;
+
+        if (type == "READ") {
+            int user, page;
+            cin >> user >> page;
+            bookReader.readPage(user, page);
+        } else if (type == "CHEER") {
+            int user;
+            cin >> user;
+            bookReader.cheerUser (user);
+        }
+    }
+
+    return 0;
+}

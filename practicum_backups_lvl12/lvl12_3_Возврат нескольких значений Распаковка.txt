@@ -1,0 +1,139 @@
+#include <iostream>
+#include <string_view>
+#include <vector>
+#include <iomanip>
+#include <sstream>
+#include <array>
+
+struct DayInfo {
+    double income = 0.0; // Хранит доход за день
+};
+
+class BudgetManager {
+public:
+    BudgetManager() : days(365 * (2099 - 2000 + 1)) {} // Инициализируем вектор на 100 лет
+
+    void Earn(const std::string& start_date, const std::string& end_date, double amount);
+    void PayTax(const std::string& start_date, const std::string& end_date);
+    double ComputeIncome(const std::string& start_date, const std::string& end_date) const;
+
+private:
+    std::vector<DayInfo> days;
+
+    int DateToIndex(const std::string& date) const;
+    int ComputeDistance(const std::string& start_date, const std::string& end_date) const;
+};
+
+// Преобразование даты в индекс с учетом високосных годов и реального количества дней в месяцах
+int BudgetManager::DateToIndex(const std::string& date) const {
+    int year, month, day;
+    std::sscanf(date.c_str(), "%d-%d-%d", &year, &month, &day);
+
+    static const std::array<int, 12> days_in_month = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int index = (year - 2000) * 365; // Базовое количество дней с 2000 года
+
+    // Учитываем високосные годы
+    for (int y = 2000; y < year; ++y) {
+        if ((y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)) {
+            index += 1;
+        }
+    }
+
+    // Учитываем дни в месяцах
+    for (int m = 1; m < month; ++m) {
+        index += days_in_month[m - 1];
+        if (m == 2 && ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))) {
+            index += 1; // Високосный год
+        }
+    }
+
+    index += day - 1; // Добавляем дни текущего месяца
+    return index;
+}
+
+// Вычисление расстояния между датами
+int BudgetManager::ComputeDistance(const std::string& start_date, const std::string& end_date) const {
+    return DateToIndex(end_date) - DateToIndex(start_date) + 1;
+}
+
+// Метод для учета дохода
+void BudgetManager::Earn(const std::string& start_date, const std::string& end_date, double amount) {
+    int days_count = ComputeDistance(start_date, end_date);
+    double daily_income = amount / days_count;
+
+    int start_index = DateToIndex(start_date);
+    int end_index = DateToIndex(end_date);
+
+    for (int i = start_index; i <= end_index; ++i) {
+        days[i].income += daily_income;
+    }
+}
+
+// Метод для уплаты налога
+void BudgetManager::PayTax(const std::string& start_date, const std::string& end_date) {
+    int start_index = DateToIndex(start_date);
+    int end_index = DateToIndex(end_date);
+
+    for (int i = start_index; i <= end_index; ++i) {
+        days[i].income *= 0.87; // Уменьшение на 13%
+    }
+}
+
+// Метод для вычисления чистого дохода
+double BudgetManager::ComputeIncome(const std::string& start_date, const std::string& end_date) const {
+    double total_income = 0.0;
+    int start_index = DateToIndex(start_date);
+    int end_index = DateToIndex(end_date);
+
+    for (int i = start_index; i <= end_index; ++i) {
+        total_income += days[i].income;
+    }
+    return total_income;
+}
+
+// Функция для чтения и обработки запроса
+void ParseAndProcessQuery(BudgetManager& manager, std::string_view line) {
+    std::istringstream stream{std::string(line)}; // Используем фигурные скобки для инициализации
+    std::string command;
+    stream >> command;
+
+    if (command == "Earn") {
+        std::string start_date, end_date;
+        double amount;
+        stream >> start_date >> end_date >> amount;
+        manager.Earn(start_date, end_date, amount);
+    } else if (command == "PayTax") {
+        std::string start_date, end_date;
+        stream >> start_date >> end_date;
+        manager.PayTax(start_date, end_date);
+    } else if (command == "ComputeIncome") {
+        std::string start_date, end_date;
+        stream >> start_date >> end_date;
+        double income = manager.ComputeIncome(start_date, end_date);
+        std::cout << std::fixed << std::setprecision(4) << income << std::endl;
+    }
+}
+
+int ReadNumberOnLine(std::istream& input) {
+    std::string line;
+    std::getline(input, line);
+    return std::stoi(line);
+}
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    BudgetManager manager;
+
+    const int query_count = ReadNumberOnLine(std::cin); // Читаем количество запросов
+
+    // Обработка каждого запроса
+    for (int i = 0; i < query_count; ++i) {
+        std::string line;
+        std::getline(std::cin, line);
+        ParseAndProcessQuery(manager, line);
+    }
+
+    return 0;
+}

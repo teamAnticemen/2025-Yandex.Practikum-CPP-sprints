@@ -1,0 +1,106 @@
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <string_view>
+#include <vector>
+
+using namespace std;
+
+class Domain {
+public:
+    explicit Domain(const string& domain) : domain_("." + domain) {
+        // Переворачиваем домен для удобства проверки поддоменов
+        reverse(domain_.begin(), domain_.end());
+    }
+
+    bool operator==(const Domain& other) const {
+        return domain_ == other.domain_;
+    }
+
+    bool IsSubdomain(const Domain& other) const {
+        // Проверяем, является ли текущий домен поддоменом другого
+        if (domain_.size() < other.domain_.size()) {
+            return false;
+        }
+        // Проверяем, что текущий домен начинается с другого домена
+        return domain_.substr(0, other.domain_.size()) == other.domain_;
+    }
+
+    const string& GetDomain() const {
+        return domain_;
+    }
+
+private:
+    string domain_;
+};
+
+vector<Domain> ReadDomains(istream& input, size_t count) {
+    vector<Domain> domains;
+    domains.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        string domain;
+        getline(input, domain);
+        domains.emplace_back(domain);
+    }
+    return domains;
+}
+
+class DomainChecker {
+public:
+    template <typename Iterator>
+    DomainChecker(Iterator begin, Iterator end) {
+        forbidden_domains_.assign(begin, end);
+        // Сортируем домены для бинарного поиска
+        sort(forbidden_domains_.begin(), forbidden_domains_.end(), [](const Domain& lhs, const Domain& rhs) {
+            return lhs.GetDomain() < rhs.GetDomain();
+        });
+
+        // Удаляем избыточные поддомены
+        auto last = unique(forbidden_domains_.begin(), forbidden_domains_.end(), [](const Domain& lhs, const Domain& rhs) {
+            return rhs.IsSubdomain(lhs);
+        });
+        forbidden_domains_.erase(last, forbidden_domains_.end());
+    }
+
+    bool IsForbidden(const Domain& domain) const {
+        // Используем бинарный поиск для проверки, является ли домен запрещённым
+        auto it = upper_bound(forbidden_domains_.begin(), forbidden_domains_.end(), domain, [](const Domain& lhs, const Domain& rhs) {
+            return lhs.GetDomain() < rhs.GetDomain();
+        });
+
+        // Проверяем, является ли домен поддоменом найденного запрещённого домена
+        if (it != forbidden_domains_.begin()) {
+            --it;
+            if (domain.IsSubdomain(*it)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+private:
+    vector<Domain> forbidden_domains_;
+};
+
+template <typename Number>
+Number ReadNumberOnLine(istream& input) {
+    string line;
+    getline(input, line);
+
+    Number num;
+    istringstream(line) >> num;
+
+    return num;
+}
+
+int main() {
+    const vector<Domain> forbidden_domains = ReadDomains(cin, ReadNumberOnLine<size_t>(cin));
+    DomainChecker checker(forbidden_domains.begin(), forbidden_domains.end());
+
+    const vector<Domain> test_domains = ReadDomains(cin, ReadNumberOnLine<size_t>(cin));
+    for (const Domain& domain : test_domains) {
+        cout << (checker.IsForbidden(domain) ? "Bad" : "Good") << endl;
+    }
+}
