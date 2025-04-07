@@ -1,0 +1,137 @@
+#include <cassert>
+#include <cstddef>  // нужно для nullptr_t
+#include <utility>
+
+using namespace std;
+
+// Реализуем шаблон класса UniquePtr
+template <typename T>
+class UniquePtr {
+private:
+    T* ptr;  // Указатель на управляемый объект
+
+public:
+    // Конструктор по умолчанию
+    UniquePtr() : ptr(nullptr) {}
+
+    // Конструктор, принимающий T*
+    explicit UniquePtr(T* ptr) : ptr(ptr) {}
+
+    // Конструктор перемещения
+    UniquePtr(UniquePtr&& other) noexcept : ptr(other.ptr) {
+        other.ptr = nullptr;  // Передаем владение и обнуляем указатель другого объекта
+    }
+
+    // Запрещаем конструктор копирования
+    UniquePtr(const UniquePtr&) = delete;
+
+    // Оператор присваивания nullptr_t
+    UniquePtr& operator=(nullptr_t) {
+        Reset();  // Сбрасываем указатель
+        return *this;
+    }
+
+    // Move-оператор присваивания
+    UniquePtr& operator=(UniquePtr&& other) noexcept {
+        if (this != &other) {  // Проверяем на самоприсваивание
+            Reset();           // Освобождаем текущий ресурс
+            ptr = other.ptr;   // Передаем владение
+            other.ptr = nullptr; // Обнуляем указатель другого объекта
+        }
+        return *this;
+    }
+
+    // Деструктор
+    ~UniquePtr() {
+        delete ptr;  // Освобождаем память
+    }
+
+    // Оператор разыменования
+    T& operator*() const {
+        return *ptr;
+    }
+
+    // Оператор -> 
+    T* operator->() const {
+        return ptr;
+    }
+
+    // Функция Release
+    T* Release() {
+        T* temp = ptr;  // Сохраняем текущий указатель
+        ptr = nullptr;  // Обнуляем указатель
+        return temp;    // Возвращаем старый указатель
+    }
+
+    // Функция Reset
+    void Reset(T* new_ptr = nullptr) {
+        delete ptr;  // Освобождаем текущий ресурс
+        ptr = new_ptr; // Устанавливаем новый указатель
+    }
+
+    // Функция Swap
+    void Swap(UniquePtr& other) {
+        std::swap(ptr, other.ptr);  // Меняем местами указатели
+    }
+
+    // Функция Get
+    T* Get() const {
+        return ptr;  // Возвращаем указатель
+    }
+};
+
+struct Item {
+    static int counter;
+    int value;
+    Item(int v = 0)
+        : value(v) 
+    {
+        ++counter;
+    }
+    Item(const Item& other)
+        : value(other.value) 
+    {
+        ++counter;
+    }
+    ~Item() {
+        --counter;
+    }
+};
+
+int Item::counter = 0;
+
+void TestLifetime() {
+    Item::counter = 0;
+    {
+        UniquePtr<Item> ptr(new Item);
+        assert(Item::counter == 1);
+
+        ptr.Reset(new Item);
+        assert(Item::counter == 1);
+    }
+    assert(Item::counter == 0);
+
+    {
+        UniquePtr<Item> ptr(new Item);
+        assert(Item::counter == 1);
+
+        auto rawPtr = ptr.Release();
+        assert(Item::counter == 1);
+
+        delete rawPtr;
+        assert(Item::counter == 0);
+    }
+    assert(Item::counter == 0);
+}
+
+void TestGetters() {
+    UniquePtr<Item> ptr(new Item(42));
+    assert(ptr.Get()->value == 42);
+    assert((*ptr).value == 42);
+    assert(ptr->value == 42);
+}
+
+int main() {
+    TestLifetime();
+    TestGetters();
+}

@@ -1,0 +1,107 @@
+#include <iostream>
+#include <map>
+#include <unordered_set>
+#include <deque>
+#include <string>
+
+using namespace std;
+
+class HotelManager {
+public:
+    void Book(int64_t time, const string& hotel_name, int client_id, int room_count) {
+        // Обновляем время последнего бронирования
+        last_time = time;
+
+        // Удаляем старые бронирования для данного отеля
+        CleanOldBookings(hotel_name);
+
+        // Добавляем запись о бронировании
+        bookings[hotel_name].emplace_back(time, client_id, room_count);
+
+        // Обновляем количество уникальных клиентов
+        unique_clients[hotel_name].insert(client_id);
+
+        // Обновляем общее количество номеров
+        total_rooms[hotel_name] += room_count;
+    }
+
+    int ComputeClientCount(const string& hotel_name) {
+        // Удаляем старые бронирования для данного отеля
+        CleanOldBookings(hotel_name);
+
+        // Возвращаем количество уникальных клиентов
+        return unique_clients[hotel_name].size();
+    }
+
+    int ComputeRoomCount(const string& hotel_name) {
+        // Удаляем старые бронирования для данного отеля
+        CleanOldBookings(hotel_name);
+
+        // Возвращаем общее количество номеров
+        return total_rooms[hotel_name];
+    }
+
+private:
+    struct Booking {
+        int64_t time;
+        int client_id;
+        int room_count;
+
+        Booking(int64_t t, int cid, int rcount) : time(t), client_id(cid), room_count(rcount) {}
+    };
+
+    map<string, deque<Booking>> bookings; // Хранит все бронирования по отелям
+    map<string, unordered_set<int>> unique_clients; // Хранит уникальных клиентов по отелям
+    map<string, int> total_rooms; // Хранит общее количество номеров по отелям
+    int64_t last_time = 0; // Время последнего бронирования
+
+    void CleanOldBookings(const string& hotel_name) {
+        int64_t time_limit = last_time - 86400; // 86400 секунд в сутках
+
+        // Удаляем старые бронирования
+        while (!bookings[hotel_name].empty() && bookings[hotel_name].front().time <= time_limit) {
+            const auto& old_booking = bookings[hotel_name].front();
+
+            // Удаляем клиента из множества уникальных клиентов
+            unique_clients[hotel_name].erase(old_booking.client_id);
+
+            // Уменьшаем общее количество номеров
+            total_rooms[hotel_name] -= old_booking.room_count;
+
+            // Удаляем старое бронирование
+            bookings[hotel_name].pop_front();
+        }
+    }
+};
+
+int main() {
+    HotelManager manager;
+
+    int query_count;
+    cin >> query_count;
+
+    for (int query_id = 0; query_id < query_count; ++query_id) {
+        string query_type;
+        cin >> query_type;
+
+        if (query_type == "BOOK") {
+            int64_t time;
+            cin >> time;
+            string hotel_name;
+            cin >> hotel_name;
+            int client_id, room_count;
+            cin >> client_id >> room_count;
+            manager.Book(time, hotel_name, client_id, room_count);
+        } else {
+            string hotel_name;
+            cin >> hotel_name;
+            if (query_type == "CLIENTS") {
+                cout << manager.ComputeClientCount(hotel_name) << "\n";
+            } else if (query_type == "ROOMS") {
+                cout << manager.ComputeRoomCount(hotel_name) << "\n";
+            }
+        }
+    }
+
+    return 0;
+}
